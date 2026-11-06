@@ -23,9 +23,22 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && a2enmod rewrite headers \
     && rm -rf /var/lib/apt/lists/*
 
-ENV APACHE_DOCUMENT_ROOT=/var/www/html/public
-RUN sed -ri 's!/var/www/html!\${APACHE_DOCUMENT_ROOT}!g' /etc/apache2/sites-available/*.conf \
-    && sed -ri 's!/var/www/!\${APACHE_DOCUMENT_ROOT}!g' /etc/apache2/apache2.conf /etc/apache2/conf-available/*.conf
+# Apache must allow Laravel's public/.htaccess to route every URL to index.php.
+RUN cat > /etc/apache2/sites-available/000-default.conf <<'APACHE'
+<VirtualHost *:80>
+    ServerAdmin webmaster@localhost
+    DocumentRoot /var/www/html/public
+
+    <Directory /var/www/html/public>
+        Options FollowSymLinks
+        AllowOverride All
+        Require all granted
+    </Directory>
+
+    ErrorLog ${APACHE_LOG_DIR}/error.log
+    CustomLog ${APACHE_LOG_DIR}/access.log combined
+</VirtualHost>
+APACHE
 
 WORKDIR /var/www/html
 COPY --from=vendor /app/vendor ./vendor
@@ -45,6 +58,7 @@ chown -R www-data:www-data storage bootstrap/cache database
 php artisan config:clear
 php artisan migrate --force
 php artisan db:seed --force
+php artisan storage:link --force
 exec apache2-foreground
 EOF
 RUN chmod +x /usr/local/bin/start-app
