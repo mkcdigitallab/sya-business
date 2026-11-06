@@ -17,7 +17,7 @@ RUN composer dump-autoload --no-dev --optimize
 # Runtime
 FROM php:8.3-apache-bookworm
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    libicu-dev libzip-dev libsqlite3-dev libpng-dev libjpeg62-turbo-dev libfreetype6-dev \
+    libicu-dev libzip-dev libsqlite3-dev libonig-dev libpng-dev libjpeg62-turbo-dev libfreetype6-dev \
     && docker-php-ext-configure gd --with-freetype --with-jpeg \
     && docker-php-ext-install -j"$(nproc)" pdo_sqlite mbstring bcmath exif pcntl gd zip intl opcache \
     && a2enmod rewrite headers \
