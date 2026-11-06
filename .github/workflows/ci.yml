@@ -1,0 +1,35 @@
+name: Quality checks
+on:
+  push:
+    branches: [main, 'feat/**']
+  pull_request:
+    branches: [main]
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          extensions: mbstring, pdo_sqlite, sqlite3
+          coverage: none
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - name: Install PHP dependencies
+        run: composer install --no-interaction --prefer-dist
+      - name: Prepare Laravel
+        run: |
+          cp .env.example .env
+          php artisan key:generate
+          touch database/database.sqlite
+          php artisan migrate --seed --force
+          php artisan route:list
+      - name: Run tests
+        run: php artisan test
+      - name: Install JavaScript dependencies
+        run: npm install
+      - name: Build frontend
+        run: npm run build
